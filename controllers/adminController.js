@@ -3,10 +3,16 @@ const User = require("../models/User");
 exports.approveCaptain = async (req, res) => {
   try {
     const { captainId } = req.body;
+    console.log(
+      `[ADMIN] Captain approval request for id: ${captainId} by admin: ${req.user._id}`
+    );
 
     // Get captain
     const captain = await User.findById(captainId);
     if (!captain || captain.role !== "Captain") {
+      console.log(
+        `[ADMIN] Captain approval failed - Invalid captain ID: ${captainId}`
+      );
       return res.status(400).json({ message: "Invalid captain ID" });
     }
 
@@ -20,12 +26,15 @@ exports.approveCaptain = async (req, res) => {
       expiryDate
     );
 
+    console.log(
+      `[ADMIN] Captain approved successfully: ${captainId}, expiry: ${expiryDate}`
+    );
     res.json({
       message: "Captain approved successfully",
       captain: updatedCaptain,
     });
   } catch (error) {
-    console.error(error);
+    console.error(`[ADMIN] Captain approval error:`, error);
     res.status(500).json({ message: "Server error" });
   }
 };

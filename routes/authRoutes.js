@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { register, login } = require("../controllers/authController");
+const {
+  register,
+  login,
+  logout,
+  getProfile,
+  updateProfile,
+} = require("../controllers/authController");
+const { protect } = require("../middleware/authMiddleware");
 
 /**
  * @swagger
@@ -67,5 +74,66 @@ router.post("/register", register);
  *         description: Invalid credentials
  */
 router.post("/login", login);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout a user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Not authorized
+ */
+router.post("/logout", protect, logout);
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Get user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       401:
+ *         description: Not authorized
+ */
+router.get("/profile", protect, getProfile);
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Not authorized
+ */
+router.put("/profile", protect, updateProfile);
 
 module.exports = router;

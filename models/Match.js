@@ -1,156 +1,107 @@
-const { pool } = require("../config/db");
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const Match = {
-  create: async (matchData) => {
-    const { teams, status } = matchData;
+const MatchScoreSchema = new Schema({
+  teamId: {
+    type: Schema.Types.ObjectId,
+    ref: "Team",
+    required: true,
+  },
+  score: {
+    type: Number,
+    default: 0,
+  },
+});
 
-    // Start a transaction
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
+const MatchSchema = new Schema(
+  {
+    teams: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Team",
+      },
+    ],
+    scores: [MatchScoreSchema],
+    status: {
+      type: String,
+      enum: ["Upcoming", "Live", "Completed"],
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-      // Create the match
-      const matchResult = await client.query(
-        "INSERT INTO matches (status) VALUES ($1) RETURNING *",
-        [status]
-      );
+const Match = mongoose.model("Match", MatchSchema);
 
-      const match = matchResult.rows[0];
+// Static methods
+Match.create = async (matchData) => {
+  const { teams, status } = matchData;
 
-      // Add teams to the match
-      for (const teamId of teams) {
-        await client.query(
-          "INSERT INTO match_teams (match_id, team_id) VALUES ($1, $2)",
-          [match.id, teamId]
-        );
+  // Create match with teams and initialize scores
+  const match = new Match({
+    teams,
+    status,
+    scores: teams.map((teamId) => ({ teamId, score: 0 })),
+  });
 
-        // Initialize scores to 0
-        await client.query(
-          "INSERT INTO match_scores (match_id, team_id, score) VALUES ($1, $2, 0)",
-          [match.id, teamId]
-        );
-      }
+  await match.save();
 
-      await client.query("COMMIT");
+  // Return match with populated teams
+  return await Match.findById(match._id)
+    .populate({
+      path: "teams",
+      select: "id name captainId",
+    })
+    .populate({
+      path: "scores.teamId",
+      select: "id name",
+    });
+};
 
-      // Return the match with teams and scores
-      const result = await client.query(
-        `
-        SELECT m.*,
-               COALESCE(
-                 (SELECT json_agg(t.*)
-                  FROM match_teams mt
-                  JOIN teams t ON mt.team_id = t.id
-                  WHERE mt.match_id = m.id), '[]'
-               ) AS teams,
-               COALESCE(
-                 (SELECT json_object_agg(team_id, score)
-                  FROM match_scores
-                  WHERE match_id = m.id), '{}'
-               ) AS score
-        FROM matches m
-        WHERE m.id = $1
-      `,
-        [match.id]
-      );
-
-      return result.rows[0];
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
+Match.updateScore = async (matchId, teamId, score) => {
+  await Match.findOneAndUpdate(
+    {
+      _id: matchId,
+      "scores.teamId": teamId,
+    },
+    {
+      $set: { "scores.$.score": score },
     }
-  },
+  );
 
-  updateScore: async (matchId, teamId, score) => {
-    await pool.query(
-      "UPDATE match_scores SET score = $1 WHERE match_id = $2 AND team_id = $3",
-      [score, matchId, teamId]
-    );
+  return await Match.findById(matchId)
+    .populate({
+      path: "teams",
+      select: "id name captainId",
+    })
+    .populate({
+      path: "scores.teamId",
+      select: "id name",
+    });
+};
 
-    const result = await pool.query(
-      `
-      SELECT m.*,
-             COALESCE(
-               (SELECT json_agg(
-                 json_build_object(
-                   'id', t.id,
-                   'name', t.name,
-                   'captain_id', t.captain_id
-                 )
-               )
-                FROM match_teams mt
-                JOIN teams t ON mt.team_id = t.id
-                WHERE mt.match_id = m.id), '[]'
-             ) AS teams,
-             COALESCE(
-               (SELECT json_object_agg(team_id::text, score)
-                FROM match_scores
-                WHERE match_id = m.id), '{}'
-             ) AS score
-      FROM matches m
-      WHERE m.id = $1
-    `,
-      [matchId]
-    );
+Match.findAll = async () => {
+  return await Match.find()
+    .populate({
+      path: "teams",
+      select: "id name captainId",
+    })
+    .populate({
+      path: "scores.teamId",
+      select: "id name",
+    });
+};
 
-    return result.rows[0];
-  },
-
-  findAll: async () => {
-    const result = await pool.query(`
-      SELECT m.*,
-             COALESCE(
-               (SELECT json_agg(
-                 json_build_object(
-                   'id', t.id,
-                   'name', t.name,
-                   'captain_id', t.captain_id
-                 )
-               )
-                FROM match_teams mt
-                JOIN teams t ON mt.team_id = t.id
-                WHERE mt.match_id = m.id), '[]'
-             ) AS teams,
-             COALESCE(
-               (SELECT json_object_agg(team_id::text, score)
-                FROM match_scores
-                WHERE match_id = m.id), '{}'
-             ) AS score
-      FROM matches m
-    `);
-    return result.rows;
-  },
-
-  findById: async (id) => {
-    const result = await pool.query(
-      `
-      SELECT m.*,
-             COALESCE(
-               (SELECT json_agg(
-                 json_build_object(
-                   'id', t.id,
-                   'name', t.name,
-                   'captain_id', t.captain_id
-                 )
-               )
-                FROM match_teams mt
-                JOIN teams t ON mt.team_id = t.id
-                WHERE mt.match_id = m.id), '[]'
-             ) AS teams,
-             COALESCE(
-               (SELECT json_object_agg(team_id::text, score)
-                FROM match_scores
-                WHERE match_id = m.id), '{}'
-             ) AS score
-      FROM matches m
-      WHERE m.id = $1
-    `,
-      [id]
-    );
-    return result.rows[0];
-  },
+Match.findById = async (id) => {
+  return await Match.findOne({ _id: id })
+    .populate({
+      path: "teams",
+      select: "id name captainId",
+    })
+    .populate({
+      path: "scores.teamId",
+      select: "id name",
+    });
 };
 
 module.exports = Match;

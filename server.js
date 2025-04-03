@@ -5,7 +5,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 
 const { connectDB } = require("./config/db");
-const initializeDatabase = require("./config/initDB");
+const loggingMiddleware = require("./middleware/loggingMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const matchRoutes = require("./routes/matchRoutes");
@@ -14,11 +14,8 @@ const adminRoutes = require("./routes/adminRoutes");
 
 dotenv.config();
 
-// Connect to PostgreSQL
+// Connect to MongoDB
 connectDB();
-
-// Initialize database schema
-initializeDatabase().catch(console.error);
 
 const app = express();
 
@@ -36,6 +33,15 @@ const swaggerOptions = {
         url: `http://localhost:${process.env.PORT || 5000}`,
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
   },
   apis: ["./routes/*.js"],
 };
@@ -44,6 +50,9 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 app.use(express.json());
 app.use(cors());
+
+// Add logging middleware
+app.use(loggingMiddleware);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
@@ -64,10 +73,20 @@ app.use("/api/matches", matchRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(`[${new Date().toISOString()}] GLOBAL ERROR:`, err);
+  res.status(500).json({
+    message: "Server error",
+    error: process.env.NODE_ENV === "production" ? null : err.message,
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
+  console.log("=".repeat(50));
   console.log(`Server running on port ${PORT}`);
-  console.log(
-    `API documentation available at http://localhost:${PORT}/api-docs`
-  );
+  console.log(`API URL: http://localhost:${PORT}`);
+  console.log(`API documentation: http://localhost:${PORT}/api-docs`);
+  console.log("=".repeat(50));
 });
