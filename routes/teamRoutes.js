@@ -4,7 +4,11 @@ const {
   createTeam,
   invitePlayer,
   getTeams,
+  getTeamById,
+  getCaptainTeams,
   requestPlayerRemoval,
+  updateTeam,
+  deleteTeam,
 } = require("../controllers/teamController");
 const { protect } = require("../middleware/authMiddleware");
 const { authorize } = require("../middleware/roleMiddleware");
@@ -89,6 +93,46 @@ router.get("/", protect, getTeams);
 
 /**
  * @swagger
+ * /api/teams/{id}:
+ *   get:
+ *     summary: Get team by ID
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Team details
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: Team not found
+ */
+router.get("/:id", protect, getTeamById);
+
+/**
+ * @swagger
+ * /api/teams/captain/my-teams:
+ *   get:
+ *     summary: Get teams for the logged in captain
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of captain's teams
+ *       401:
+ *         description: Not authorized
+ */
+router.get("/captain/my-teams", protect, authorize("Captain"), getCaptainTeams);
+
+/**
+ * @swagger
  * /api/teams/remove-player:
  *   post:
  *     summary: Request player removal from a team
@@ -125,5 +169,70 @@ router.post(
   authorize("Captain"),
   requestPlayerRemoval
 );
+
+/**
+ * @swagger
+ * /api/teams/{teamId}:
+ *   put:
+ *     summary: Update team details
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teamId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               jerseyNumbers:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *     responses:
+ *       200:
+ *         description: Team updated successfully
+ *       401:
+ *         description: Not authorized
+ *       403:
+ *         description: Not authorized to update team
+ *       404:
+ *         description: Team not found
+ */
+router.put("/:teamId", protect, updateTeam);
+
+/**
+ * @swagger
+ * /api/teams/{teamId}:
+ *   delete:
+ *     summary: Delete a team
+ *     tags: [Teams]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: teamId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Team deleted successfully
+ *       401:
+ *         description: Not authorized
+ *       403:
+ *         description: Not authorized to delete team
+ *       404:
+ *         description: Team not found
+ */
+router.delete("/:teamId", protect, deleteTeam);
 
 module.exports = router;

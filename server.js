@@ -5,7 +5,6 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 
 const { connectDB } = require("./config/db");
-const loggingMiddleware = require("./middleware/loggingMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const matchRoutes = require("./routes/matchRoutes");
@@ -50,9 +49,6 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 app.use(express.json());
 app.use(cors());
-
-// Add logging middleware
-app.use(loggingMiddleware);
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));

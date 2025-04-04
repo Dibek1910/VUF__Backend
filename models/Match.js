@@ -27,6 +27,16 @@ const MatchSchema = new Schema(
       enum: ["Upcoming", "Live", "Completed"],
       required: true,
     },
+    matchDate: {
+      type: Date,
+      default: Date.now,
+    },
+    location: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
@@ -35,12 +45,15 @@ const Match = mongoose.model("Match", MatchSchema);
 
 // Static methods
 Match.create = async (matchData) => {
-  const { teams, status } = matchData;
+  const { teams, status, matchDate, location, description } = matchData;
 
   // Create match with teams and initialize scores
   const match = new Match({
     teams,
     status,
+    matchDate: matchDate || new Date(),
+    location: location || null,
+    description: description || null,
     scores: teams.map((teamId) => ({ teamId, score: 0 })),
   });
 
@@ -89,7 +102,8 @@ Match.findAll = async () => {
     .populate({
       path: "scores.teamId",
       select: "id name",
-    });
+    })
+    .sort({ matchDate: -1 });
 };
 
 Match.findById = async (id) => {

@@ -79,6 +79,62 @@ exports.getTeams = async (req, res) => {
   }
 };
 
+exports.getTeamById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(
+      `[TEAM] Get team by ID request for team: ${id} by user: ${req.user._id}`
+    );
+
+    const team = await Team.findById(id)
+      .populate({
+        path: "captainId",
+        select:
+          "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+      })
+      .populate({
+        path: "players",
+        select: "id name email phone role uniqueId",
+      });
+
+    if (!team) {
+      console.log(`[TEAM] Get team failed - Team not found: ${id}`);
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    console.log(`[TEAM] Team retrieved successfully: ${id}`);
+    res.json(team);
+  } catch (error) {
+    console.error(`[TEAM] Get team by ID error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getCaptainTeams = async (req, res) => {
+  try {
+    console.log(`[TEAM] Get captain teams request by captain: ${req.user._id}`);
+
+    const teams = await Team.find({ captainId: req.user._id })
+      .populate({
+        path: "captainId",
+        select:
+          "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+      })
+      .populate({
+        path: "players",
+        select: "id name email phone role uniqueId",
+      });
+
+    console.log(
+      `[TEAM] Retrieved ${teams.length} teams for captain: ${req.user._id}`
+    );
+    res.json(teams);
+  } catch (error) {
+    console.error(`[TEAM] Get captain teams error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.requestPlayerRemoval = async (req, res) => {
   try {
     const { teamId, playerId } = req.body;
@@ -119,6 +175,83 @@ exports.requestPlayerRemoval = async (req, res) => {
     res.json({ message: "Player removal requested", team: updatedTeam });
   } catch (error) {
     console.error(`[TEAM] Player removal error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.updateTeam = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { name, jerseyNumbers } = req.body;
+    console.log(
+      `[TEAM] Update team request for team: ${teamId} by user: ${req.user._id}`
+    );
+
+    // Find team
+    const team = await Team.findById(teamId);
+    if (!team) {
+      console.log(`[TEAM] Update team failed - Team not found: ${teamId}`);
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Check if user is captain or admin
+    if (
+      team.captainId.toString() !== req.user._id.toString() &&
+      req.user.role !== "Admin"
+    ) {
+      console.log(
+        `[TEAM] Update team failed - Not authorized: User ${req.user._id} is not the captain of team ${teamId}`
+      );
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Update team
+    const updatedTeam = await Team.findByIdAndUpdate(
+      teamId,
+      { name, jerseyNumbers },
+      { new: true }
+    );
+
+    console.log(`[TEAM] Team updated successfully: ${teamId}`);
+    res.json(updatedTeam);
+  } catch (error) {
+    console.error(`[TEAM] Update team error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.deleteTeam = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    console.log(
+      `[TEAM] Delete team request for team: ${teamId} by user: ${req.user._id}`
+    );
+
+    // Find team
+    const team = await Team.findById(teamId);
+    if (!team) {
+      console.log(`[TEAM] Delete team failed - Team not found: ${teamId}`);
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Check if user is captain or admin
+    if (
+      team.captainId.toString() !== req.user._id.toString() &&
+      req.user.role !== "Admin"
+    ) {
+      console.log(
+        `[TEAM] Delete team failed - Not authorized: User ${req.user._id} is not the captain of team ${teamId}`
+      );
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Delete team
+    await Team.findByIdAndDelete(teamId);
+
+    console.log(`[TEAM] Team deleted successfully: ${teamId}`);
+    res.json({ message: "Team deleted successfully" });
+  } catch (error) {
+    console.error(`[TEAM] Delete team error:`, error);
     res.status(500).json({ message: "Server error" });
   }
 };

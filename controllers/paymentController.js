@@ -63,3 +63,98 @@ exports.getTransactions = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+exports.getTransactionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(
+      `[PAYMENT] Get transaction by ID request for transaction: ${id} by user: ${req.user._id}`
+    );
+
+    const transaction = await Transaction.findById(id);
+    if (!transaction) {
+      console.log(
+        `[PAYMENT] Get transaction failed - Transaction not found: ${id}`
+      );
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    // Check if user is admin or the captain of the transaction
+    if (
+      req.user.role !== "Admin" &&
+      transaction.captainId.toString() !== req.user._id.toString()
+    ) {
+      console.log(
+        `[PAYMENT] Get transaction failed - Not authorized: User ${req.user._id} is not authorized to view transaction ${id}`
+      );
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    console.log(`[PAYMENT] Transaction retrieved successfully: ${id}`);
+    res.json(transaction);
+  } catch (error) {
+    console.error(`[PAYMENT] Get transaction by ID error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getCaptainTransactions = async (req, res) => {
+  try {
+    console.log(
+      `[PAYMENT] Get captain transactions request by captain: ${req.user._id}`
+    );
+
+    // Check if user is a captain
+    if (req.user.role !== "Captain") {
+      console.log(
+        `[PAYMENT] Get captain transactions failed - Not a captain: User ${req.user._id}`
+      );
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const transactions = await Transaction.findByCaptain(req.user._id);
+
+    console.log(
+      `[PAYMENT] Retrieved ${transactions.length} transactions for captain: ${req.user._id} successfully`
+    );
+    res.json(transactions);
+  } catch (error) {
+    console.error(`[PAYMENT] Get captain transactions error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.updateTransactionStatus = async (req, res) => {
+  try {
+    const { transactionId, status } = req.body;
+    console.log(
+      `[PAYMENT] Update transaction status request for transaction: ${transactionId}, status: ${status}`
+    );
+
+    // Check if user is admin
+    if (req.user.role !== "Admin") {
+      console.log(
+        `[PAYMENT] Update transaction status failed - Not authorized: User ${req.user._id} is not an admin`
+      );
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Update transaction status
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      transactionId,
+      { status },
+      { new: true }
+    ).populate({
+      path: "captainId",
+      select: "id name email phone role uniqueId subscriptionStatus",
+    });
+
+    console.log(
+      `[PAYMENT] Transaction status updated successfully for transaction: ${transactionId} to ${status}`
+    );
+    res.json(updatedTransaction);
+  } catch (error) {
+    console.error(`[PAYMENT] Update transaction status error:`, error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

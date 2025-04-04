@@ -37,10 +37,28 @@ Transaction.create = async (transactionData) => {
 };
 
 Transaction.findAll = async () => {
-  return await Transaction.find().populate({
+  return await Transaction.find()
+    .populate({
+      path: "captainId",
+      select: "id name email phone role uniqueId subscriptionStatus",
+    })
+    .sort({ createdAt: -1 });
+};
+
+Transaction.findById = async (id) => {
+  return await Transaction.findOne({ _id: id }).populate({
     path: "captainId",
     select: "id name email phone role uniqueId subscriptionStatus",
   });
+};
+
+Transaction.findByCaptain = async (captainId) => {
+  return await Transaction.find({ captainId })
+    .populate({
+      path: "captainId",
+      select: "id name email phone role uniqueId subscriptionStatus",
+    })
+    .sort({ createdAt: -1 });
 };
 
 module.exports = Transaction;
