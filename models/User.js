@@ -51,7 +51,6 @@ const UserSchema = new Schema(
 
 const User = mongoose.model("User", UserSchema);
 
-// Static methods
 User.findById = async (id) => {
   return await User.findOne({ _id: id });
 };

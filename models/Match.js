@@ -43,11 +43,9 @@ const MatchSchema = new Schema(
 
 const Match = mongoose.model("Match", MatchSchema);
 
-// Static methods
 Match.create = async (matchData) => {
   const { teams, status, matchDate, location, description } = matchData;
 
-  // Create match with teams and initialize scores
   const match = new Match({
     teams,
     status,
@@ -59,7 +57,6 @@ Match.create = async (matchData) => {
 
   await match.save();
 
-  // Return match with populated teams
   return await Match.findById(match._id)
     .populate({
       path: "teams",

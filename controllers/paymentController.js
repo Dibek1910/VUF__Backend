@@ -8,7 +8,6 @@ exports.processPayment = async (req, res) => {
       `[PAYMENT] Process payment request for captain: ${captainId}, amount: ${amount}`
     );
 
-    // Verify the captain exists
     const captain = await User.findById(captainId);
     if (!captain || captain.role !== "Captain") {
       console.log(
@@ -17,17 +16,14 @@ exports.processPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid captain ID" });
     }
 
-    // Dummy payment processing
-    const success = Math.random() < 0.9; // 90% success rate
+    const success = Math.random() < 0.9;
 
-    // Create transaction
     const transaction = await Transaction.create({
       captain: captainId,
       amount,
       status: success ? "Completed" : "Failed",
     });
 
-    // If payment is successful, update captain's subscription status
     if (success) {
       await User.updateSubscription(captainId, "Pending", null);
       console.log(
@@ -79,7 +75,6 @@ exports.getTransactionById = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    // Check if user is admin or the captain of the transaction
     if (
       req.user.role !== "Admin" &&
       transaction.captainId.toString() !== req.user._id.toString()
@@ -104,7 +99,6 @@ exports.getCaptainTransactions = async (req, res) => {
       `[PAYMENT] Get captain transactions request by captain: ${req.user._id}`
     );
 
-    // Check if user is a captain
     if (req.user.role !== "Captain") {
       console.log(
         `[PAYMENT] Get captain transactions failed - Not a captain: User ${req.user._id}`
@@ -131,7 +125,6 @@ exports.updateTransactionStatus = async (req, res) => {
       `[PAYMENT] Update transaction status request for transaction: ${transactionId}, status: ${status}`
     );
 
-    // Check if user is admin
     if (req.user.role !== "Admin") {
       console.log(
         `[PAYMENT] Update transaction status failed - Not authorized: User ${req.user._id} is not an admin`
@@ -139,7 +132,6 @@ exports.updateTransactionStatus = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Update transaction status
     const updatedTransaction = await Transaction.findByIdAndUpdate(
       transactionId,
       { status },

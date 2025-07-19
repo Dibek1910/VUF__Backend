@@ -20,7 +20,6 @@ exports.protect = async (req, res, next) => {
   }
 
   try {
-    // Check if token is blacklisted
     const isBlacklisted = await TokenBlacklist.isBlacklisted(token);
     if (isBlacklisted) {
       console.log(
@@ -29,10 +28,8 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: "Not authorized" });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Get user from database
     const user = await User.findById(decoded.id);
 
     if (!user) {
@@ -42,7 +39,6 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Check if token exists in user's tokens array
     const tokenExists = user.tokens.some((t) => t.token === token);
     if (!tokenExists) {
       console.log(

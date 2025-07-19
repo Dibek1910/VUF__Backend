@@ -27,7 +27,6 @@ exports.invitePlayer = async (req, res) => {
       `[TEAM] Invite player request for team: ${teamId}, player unique ID: ${playerUniqueId}`
     );
 
-    // Find player by unique ID
     const player = await User.findByUniqueID(playerUniqueId);
     if (!player) {
       console.log(
@@ -36,14 +35,12 @@ exports.invitePlayer = async (req, res) => {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    // Find team
     const team = await Team.findById(teamId);
     if (!team) {
       console.log(`[TEAM] Invite player failed - Team not found: ${teamId}`);
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Check if player is already in team
     const isPlayerInTeam = await Team.hasPlayer(teamId, player._id);
     if (isPlayerInTeam) {
       console.log(
@@ -52,7 +49,6 @@ exports.invitePlayer = async (req, res) => {
       return res.status(400).json({ message: "Player already in team" });
     }
 
-    // Add player to team
     const updatedTeam = await Team.addPlayer(teamId, player._id);
 
     console.log(
@@ -142,14 +138,12 @@ exports.requestPlayerRemoval = async (req, res) => {
       `[TEAM] Request player removal for team: ${teamId}, player: ${playerId} by captain: ${req.user._id}`
     );
 
-    // Find team
     const team = await Team.findById(teamId);
     if (!team) {
       console.log(`[TEAM] Player removal failed - Team not found: ${teamId}`);
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Check if user is captain
     if (team.captainId.toString() !== req.user._id.toString()) {
       console.log(
         `[TEAM] Player removal failed - Not authorized: User ${req.user._id} is not the captain of team ${teamId}`
@@ -157,7 +151,6 @@ exports.requestPlayerRemoval = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Check if player is in team
     const isPlayerInTeam = await Team.hasPlayer(teamId, playerId);
     if (!isPlayerInTeam) {
       console.log(
@@ -166,7 +159,6 @@ exports.requestPlayerRemoval = async (req, res) => {
       return res.status(400).json({ message: "Player not in team" });
     }
 
-    // Set removal requested
     const updatedTeam = await Team.setRemovalRequested(teamId, playerId);
 
     console.log(
@@ -187,14 +179,12 @@ exports.updateTeam = async (req, res) => {
       `[TEAM] Update team request for team: ${teamId} by user: ${req.user._id}`
     );
 
-    // Find team
     const team = await Team.findById(teamId);
     if (!team) {
       console.log(`[TEAM] Update team failed - Team not found: ${teamId}`);
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Check if user is captain or admin
     if (
       team.captainId.toString() !== req.user._id.toString() &&
       req.user.role !== "Admin"
@@ -205,7 +195,6 @@ exports.updateTeam = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Update team
     const updatedTeam = await Team.findByIdAndUpdate(
       teamId,
       { name, jerseyNumbers },
@@ -227,14 +216,12 @@ exports.deleteTeam = async (req, res) => {
       `[TEAM] Delete team request for team: ${teamId} by user: ${req.user._id}`
     );
 
-    // Find team
     const team = await Team.findById(teamId);
     if (!team) {
       console.log(`[TEAM] Delete team failed - Team not found: ${teamId}`);
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Check if user is captain or admin
     if (
       team.captainId.toString() !== req.user._id.toString() &&
       req.user.role !== "Admin"
@@ -245,7 +232,6 @@ exports.deleteTeam = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Delete team
     await Team.findByIdAndDelete(teamId);
 
     console.log(`[TEAM] Team deleted successfully: ${teamId}`);

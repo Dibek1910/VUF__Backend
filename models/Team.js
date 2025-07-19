@@ -26,13 +26,18 @@ const TeamSchema = new Schema(
         ref: "User",
       },
     ],
+    invitedPlayers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );
 
 const Team = mongoose.model("Team", TeamSchema);
 
-// Static methods
 Team.findById = async (id) => {
   return await Team.findOne({ _id: id });
 };
@@ -43,7 +48,8 @@ Team.create = async (teamData) => {
   const team = new Team({
     name,
     captainId,
-    players: [captainId], // Add captain as a player
+    players: [captainId],
+    invitedPlayers: [],
   });
 
   await team.save();
@@ -66,7 +72,9 @@ Team.findAll = async () => {
 Team.addPlayer = async (teamId, playerId) => {
   const team = await Team.findOneAndUpdate(
     { _id: teamId },
-    { $addToSet: { players: playerId } },
+    {
+      $addToSet: { invitedPlayers: playerId },
+    },
     { new: true }
   )
     .populate({

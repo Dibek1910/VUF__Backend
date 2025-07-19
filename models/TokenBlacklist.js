@@ -10,13 +10,12 @@ const TokenBlacklistSchema = new Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: "7d", // Automatically delete after 7 days (token expiry time)
+    expires: "7d",
   },
 });
 
 const TokenBlacklist = mongoose.model("TokenBlacklist", TokenBlacklistSchema);
 
-// Static methods
 TokenBlacklist.isBlacklisted = async (token) => {
   const blacklistedToken = await TokenBlacklist.findOne({ token });
   return !!blacklistedToken;

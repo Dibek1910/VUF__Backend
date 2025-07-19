@@ -32,14 +32,12 @@ exports.updateScore = async (req, res) => {
       `[MATCH] Update score request for match: ${matchId}, team: ${teamId}, score: ${score}`
     );
 
-    // Find match
     const match = await Match.findById(matchId);
     if (!match) {
       console.log(`[MATCH] Update score failed - Match not found: ${matchId}`);
       return res.status(404).json({ message: "Match not found" });
     }
 
-    // Update score
     const updatedMatch = await Match.updateScore(matchId, teamId, score);
 
     console.log(
@@ -122,7 +120,6 @@ exports.updateMatchStatus = async (req, res) => {
       `[MATCH] Update match status request for match: ${matchId}, status: ${status}`
     );
 
-    // Find match
     const match = await Match.findById(matchId);
     if (!match) {
       console.log(
@@ -131,7 +128,6 @@ exports.updateMatchStatus = async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    // Update status
     const updatedMatch = await Match.findByIdAndUpdate(
       matchId,
       { status },
@@ -162,14 +158,12 @@ exports.updateMatch = async (req, res) => {
     const { status, matchDate, location, description } = req.body;
     console.log(`[MATCH] Update match request for match: ${matchId}`);
 
-    // Find match
     const match = await Match.findById(matchId);
     if (!match) {
       console.log(`[MATCH] Update match failed - Match not found: ${matchId}`);
       return res.status(404).json({ message: "Match not found" });
     }
 
-    // Update match
     const updatedMatch = await Match.findByIdAndUpdate(
       matchId,
       {
@@ -204,7 +198,6 @@ exports.deleteMatch = async (req, res) => {
       `[MATCH] Delete match request for match: ${matchId} by user: ${req.user._id}`
     );
 
-    // Check if user is admin
     if (req.user.role !== "Admin") {
       console.log(
         `[MATCH] Delete match failed - Not authorized: User ${req.user._id} is not an admin`
@@ -212,14 +205,12 @@ exports.deleteMatch = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Find match
     const match = await Match.findById(matchId);
     if (!match) {
       console.log(`[MATCH] Delete match failed - Match not found: ${matchId}`);
       return res.status(404).json({ message: "Match not found" });
     }
 
-    // Delete match
     await Match.findByIdAndDelete(matchId);
 
     console.log(`[MATCH] Match deleted successfully: ${matchId}`);

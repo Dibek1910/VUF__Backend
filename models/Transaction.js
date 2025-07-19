@@ -22,7 +22,6 @@ const TransactionSchema = new Schema(
 
 const Transaction = mongoose.model("Transaction", TransactionSchema);
 
-// Static methods
 Transaction.create = async (transactionData) => {
   const { captain, amount, status } = transactionData;
 

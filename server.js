@@ -10,15 +10,14 @@ const teamRoutes = require("./routes/teamRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const playerRoutes = require("./routes/playerRoutes");
 
 dotenv.config();
 
-// Connect to MongoDB
 connectDB();
 
 const app = express();
 
-// Swagger configuration
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
@@ -50,10 +49,8 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use(express.json());
 app.use(cors());
 
-// Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Welcome route
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to the Vishv Umiyadham Foundation API",
@@ -62,14 +59,13 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/player", playerRoutes);
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error(`[${new Date().toISOString()}] GLOBAL ERROR:`, err);
   res.status(500).json({

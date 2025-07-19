@@ -10,7 +10,6 @@ exports.approveCaptain = async (req, res) => {
       `[ADMIN] Captain approval request for id: ${captainId} by admin: ${req.user._id}`
     );
 
-    // Get captain
     const captain = await User.findById(captainId);
     if (!captain || captain.role !== "Captain") {
       console.log(
@@ -19,10 +18,8 @@ exports.approveCaptain = async (req, res) => {
       return res.status(400).json({ message: "Invalid captain ID" });
     }
 
-    // Set expiry date to 1 year from now
     const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
 
-    // Update subscription status
     const updatedCaptain = await User.updateSubscription(
       captainId,
       "Active",
@@ -48,7 +45,6 @@ exports.getAllUsers = async (req, res) => {
 
     const users = await User.find();
 
-    // Remove passwords from response
     const usersResponse = users.map((user) => {
       const userCopy = user.toObject();
       delete userCopy.password;
@@ -75,7 +71,6 @@ exports.getPendingCaptains = async (req, res) => {
       subscriptionStatus: "Pending",
     });
 
-    // Remove passwords from response
     const captainsResponse = captains.map((captain) => {
       const captainCopy = captain.toObject();
       delete captainCopy.password;
@@ -100,7 +95,6 @@ exports.approvePlayerRemoval = async (req, res) => {
       `[ADMIN] Player removal approval request for team: ${teamId} by admin: ${req.user._id}`
     );
 
-    // Get team
     const team = await Team.findById(teamId);
     if (!team) {
       console.log(
@@ -109,7 +103,6 @@ exports.approvePlayerRemoval = async (req, res) => {
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Check if removal is requested
     if (!team.removalRequested) {
       console.log(
         `[ADMIN] Player removal approval failed - No removal requested for team: ${teamId}`
@@ -117,10 +110,8 @@ exports.approvePlayerRemoval = async (req, res) => {
       return res.status(400).json({ message: "No removal requested" });
     }
 
-    // Remove player
     const playerId = team.removalRequested;
 
-    // Update team by removing player
     const updatedTeam = await Team.findOneAndUpdate(
       { _id: teamId },
       {
@@ -146,13 +137,11 @@ exports.getDashboardStats = async (req, res) => {
       `[ADMIN] Get dashboard stats request by admin: ${req.user._id}`
     );
 
-    // Get counts
     const users = await User.find();
     const teams = await Team.find();
     const matches = await Match.find();
     const transactions = await Transaction.find();
 
-    // Calculate stats
     const userStats = {
       total: users.length,
       admins: users.filter((user) => user.role === "Admin").length,
