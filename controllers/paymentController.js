@@ -4,15 +4,9 @@ const User = require("../models/User");
 exports.processPayment = async (req, res) => {
   try {
     const { captainId, amount } = req.body;
-    console.log(
-      `[PAYMENT] Process payment request for captain: ${captainId}, amount: ${amount}`
-    );
 
     const captain = await User.findById(captainId);
     if (!captain || captain.role !== "Captain") {
-      console.log(
-        `[PAYMENT] Payment failed - Invalid captain ID: ${captainId}`
-      );
       return res.status(400).json({ message: "Invalid captain ID" });
     }
 
@@ -26,14 +20,9 @@ exports.processPayment = async (req, res) => {
 
     if (success) {
       await User.updateSubscription(captainId, "Pending", null);
-      console.log(
-        `[PAYMENT] Payment successful for captain: ${captainId}, amount: ${amount}, transaction: ${transaction._id}`
-      );
+
       res.json({ message: "Payment successful", transaction });
     } else {
-      console.log(
-        `[PAYMENT] Payment failed for captain: ${captainId}, amount: ${amount}, transaction: ${transaction._id}`
-      );
       res.status(400).json({ message: "Payment failed", transaction });
     }
   } catch (error) {
@@ -44,15 +33,8 @@ exports.processPayment = async (req, res) => {
 
 exports.getTransactions = async (req, res) => {
   try {
-    console.log(
-      `[PAYMENT] Get all transactions request by admin: ${req.user._id}`
-    );
-
     const transactions = await Transaction.findAll();
 
-    console.log(
-      `[PAYMENT] Retrieved ${transactions.length} transactions successfully`
-    );
     res.json(transactions);
   } catch (error) {
     console.error(`[PAYMENT] Get transactions error:`, error);
@@ -63,15 +45,9 @@ exports.getTransactions = async (req, res) => {
 exports.getTransactionById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(
-      `[PAYMENT] Get transaction by ID request for transaction: ${id} by user: ${req.user._id}`
-    );
 
     const transaction = await Transaction.findById(id);
     if (!transaction) {
-      console.log(
-        `[PAYMENT] Get transaction failed - Transaction not found: ${id}`
-      );
       return res.status(404).json({ message: "Transaction not found" });
     }
 
@@ -79,13 +55,9 @@ exports.getTransactionById = async (req, res) => {
       req.user.role !== "Admin" &&
       transaction.captainId.toString() !== req.user._id.toString()
     ) {
-      console.log(
-        `[PAYMENT] Get transaction failed - Not authorized: User ${req.user._id} is not authorized to view transaction ${id}`
-      );
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    console.log(`[PAYMENT] Transaction retrieved successfully: ${id}`);
     res.json(transaction);
   } catch (error) {
     console.error(`[PAYMENT] Get transaction by ID error:`, error);
@@ -95,22 +67,12 @@ exports.getTransactionById = async (req, res) => {
 
 exports.getCaptainTransactions = async (req, res) => {
   try {
-    console.log(
-      `[PAYMENT] Get captain transactions request by captain: ${req.user._id}`
-    );
-
     if (req.user.role !== "Captain") {
-      console.log(
-        `[PAYMENT] Get captain transactions failed - Not a captain: User ${req.user._id}`
-      );
       return res.status(403).json({ message: "Not authorized" });
     }
 
     const transactions = await Transaction.findByCaptain(req.user._id);
 
-    console.log(
-      `[PAYMENT] Retrieved ${transactions.length} transactions for captain: ${req.user._id} successfully`
-    );
     res.json(transactions);
   } catch (error) {
     console.error(`[PAYMENT] Get captain transactions error:`, error);
@@ -121,14 +83,8 @@ exports.getCaptainTransactions = async (req, res) => {
 exports.updateTransactionStatus = async (req, res) => {
   try {
     const { transactionId, status } = req.body;
-    console.log(
-      `[PAYMENT] Update transaction status request for transaction: ${transactionId}, status: ${status}`
-    );
 
     if (req.user.role !== "Admin") {
-      console.log(
-        `[PAYMENT] Update transaction status failed - Not authorized: User ${req.user._id} is not an admin`
-      );
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -141,9 +97,6 @@ exports.updateTransactionStatus = async (req, res) => {
       select: "id name email phone role uniqueId subscriptionStatus",
     });
 
-    console.log(
-      `[PAYMENT] Transaction status updated successfully for transaction: ${transactionId} to ${status}`
-    );
     res.json(updatedTransaction);
   } catch (error) {
     console.error(`[PAYMENT] Update transaction status error:`, error);

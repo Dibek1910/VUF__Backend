@@ -1,118 +1,87 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const MatchScoreSchema = new Schema({
-  teamId: {
-    type: Schema.Types.ObjectId,
-    ref: "Team",
-    required: true,
-  },
-  score: {
-    type: Number,
-    default: 0,
-  },
-});
-
 const MatchSchema = new Schema(
   {
     teams: [
       {
         type: Schema.Types.ObjectId,
         ref: "Team",
+        required: true,
       },
     ],
-    scores: [MatchScoreSchema],
-    status: {
-      type: String,
-      enum: ["Upcoming", "Live", "Completed"],
-      required: true,
-    },
     matchDate: {
       type: Date,
       default: Date.now,
     },
     location: {
       type: String,
+      default: "TBD",
     },
     description: {
       type: String,
+      default: "",
+    },
+    status: {
+      type: String,
+      enum: ["Upcoming", "Live", "Completed", "Cancelled"],
+      default: "Upcoming",
+    },
+    scores: [
+      {
+        teamId: {
+          type: Schema.Types.ObjectId,
+          ref: "Team",
+          required: true,
+        },
+        score: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
+    winner: {
+      type: Schema.Types.ObjectId,
+      ref: "Team",
+      default: null,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { timestamps: true }
 );
 
-const Match = mongoose.model("Match", MatchSchema);
+MatchSchema.pre("save", function (next) {
+  if (this.teams.length !== 2) {
+    next(new Error("A match must have exactly 2 teams"));
+  }
 
-Match.create = async (matchData) => {
-  const { teams, status, matchDate, location, description } = matchData;
+  if (this.scores.length === 0) {
+    this.scores = [
+      { teamId: this.teams[0], score: 0 },
+      { teamId: this.teams[1], score: 0 },
+    ];
+  }
 
-  const match = new Match({
-    teams,
-    status,
-    matchDate: matchDate || new Date(),
-    location: location || null,
-    description: description || null,
-    scores: teams.map((teamId) => ({ teamId, score: 0 })),
-  });
+  next();
+});
 
-  await match.save();
+MatchSchema.pre("save", function (next) {
+  if (this.status === "Completed" && this.scores.length === 2) {
+    const team1Score = this.scores[0].score;
+    const team2Score = this.scores[1].score;
 
-  return await Match.findById(match._id)
-    .populate({
-      path: "teams",
-      select: "id name captainId",
-    })
-    .populate({
-      path: "scores.teamId",
-      select: "id name",
-    });
-};
-
-Match.updateScore = async (matchId, teamId, score) => {
-  await Match.findOneAndUpdate(
-    {
-      _id: matchId,
-      "scores.teamId": teamId,
-    },
-    {
-      $set: { "scores.$.score": score },
+    if (team1Score > team2Score) {
+      this.winner = this.scores[0].teamId;
+    } else if (team2Score > team1Score) {
+      this.winner = this.scores[1].teamId;
     }
-  );
+  }
+  next();
+});
 
-  return await Match.findById(matchId)
-    .populate({
-      path: "teams",
-      select: "id name captainId",
-    })
-    .populate({
-      path: "scores.teamId",
-      select: "id name",
-    });
-};
-
-Match.findAll = async () => {
-  return await Match.find()
-    .populate({
-      path: "teams",
-      select: "id name captainId",
-    })
-    .populate({
-      path: "scores.teamId",
-      select: "id name",
-    })
-    .sort({ matchDate: -1 });
-};
-
-Match.findById = async (id) => {
-  return await Match.findOne({ _id: id })
-    .populate({
-      path: "teams",
-      select: "id name captainId",
-    })
-    .populate({
-      path: "scores.teamId",
-      select: "id name",
-    });
-};
+const Match = mongoose.model("Match", MatchSchema);
 
 module.exports = Match;
