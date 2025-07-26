@@ -67,9 +67,7 @@ exports.getPendingCaptains = async (req, res) => {
       role: "Captain",
       isApproved: false,
     })
-      .select(
-        "name email phone uniqueId subscriptionStatus subscriptionExpiryDate createdAt"
-      )
+      .select("name email phone uniqueId createdAt")
       .sort({ createdAt: -1 });
 
     res.json(pendingCaptains);
@@ -122,8 +120,7 @@ exports.getAllTeams = async (req, res) => {
     const teams = await Team.find()
       .populate({
         path: "captainId",
-        select:
-          "name email phone uniqueId subscriptionStatus subscriptionExpiryDate isApproved",
+        select: "name email phone uniqueId isApproved",
       })
       .populate({
         path: "players",
@@ -395,9 +392,7 @@ exports.updateMatchStatus = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
-      .select(
-        "name email phone uniqueId role isApproved subscriptionStatus subscriptionExpiryDate createdAt"
-      )
+      .select("name email phone uniqueId role isApproved createdAt")
       .sort({ createdAt: -1 });
 
     res.json(users);

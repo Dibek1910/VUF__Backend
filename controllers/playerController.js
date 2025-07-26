@@ -102,8 +102,7 @@ exports.getPlayerTeam = async (req, res) => {
     const team = await Team.findOne({ players: playerId })
       .populate({
         path: "captainId",
-        select:
-          "name email phone uniqueId subscriptionStatus subscriptionExpiryDate",
+        select: "name email phone uniqueId",
       })
       .populate({
         path: "players",

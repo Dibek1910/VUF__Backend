@@ -58,8 +58,7 @@ TeamSchema.statics.findAll = async function () {
   return await this.find()
     .populate({
       path: "captainId",
-      select:
-        "name email phone uniqueId subscriptionStatus subscriptionExpiryDate isApproved",
+      select: "name email phone uniqueId isApproved",
     })
     .populate({
       path: "players",
@@ -81,8 +80,7 @@ TeamSchema.statics.addPlayer = async function (teamId, playerId) {
   )
     .populate({
       path: "captainId",
-      select:
-        "name email phone uniqueId subscriptionStatus subscriptionExpiryDate isApproved",
+      select: "name email phone uniqueId isApproved",
     })
     .populate({
       path: "players",

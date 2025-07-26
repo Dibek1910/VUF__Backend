@@ -36,22 +36,6 @@ const UserSchema = new Schema(
         return this.role === "Admin" || this.role === "Player";
       },
     },
-    subscriptionStatus: {
-      type: String,
-      enum: ["Active", "Inactive", "Expired", "Pending"],
-      default: function () {
-        return this.role === "Captain" ? "Inactive" : "Active";
-      },
-    },
-    subscriptionExpiryDate: {
-      type: Date,
-      default: function () {
-        if (this.role === "Captain") {
-          return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        }
-        return null;
-      },
-    },
     tokens: [
       {
         token: {
@@ -120,21 +104,6 @@ UserSchema.statics.removeToken = async function (userId, token) {
   return this.findByIdAndUpdate(
     userId,
     { $pull: { tokens: { token } } },
-    { new: true }
-  );
-};
-
-UserSchema.statics.updateSubscription = async function (
-  userId,
-  status,
-  expiryDate
-) {
-  return this.findByIdAndUpdate(
-    userId,
-    {
-      subscriptionStatus: status,
-      subscriptionExpiryDate: expiryDate,
-    },
     { new: true }
   );
 };

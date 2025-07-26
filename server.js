@@ -8,7 +8,6 @@ const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const teamRoutes = require("./routes/teamRoutes");
 const matchRoutes = require("./routes/matchRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const playerRoutes = require("./routes/playerRoutes");
 
@@ -24,7 +23,7 @@ const swaggerOptions = {
     info: {
       title: "Vishv Umiyadham Foundation API",
       version: "1.0.0",
-      description: "API for managing teams, matches, and payments",
+      description: "API for managing teams and matches",
     },
     servers: [
       {
@@ -62,7 +61,6 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/matches", matchRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/player", playerRoutes);
 
