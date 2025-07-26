@@ -28,16 +28,13 @@ const { authorize } = require("../middleware/roleMiddleware");
  *           schema:
  *             type: object
  *             required:
- *               - teams
- *               - status
+ *               - team1Id
+ *               - team2Id
  *             properties:
- *               teams:
- *                 type: array
- *                 items:
- *                   type: string
- *               status:
+ *               team1Id:
  *                 type: string
- *                 enum: [Upcoming, Live, Completed]
+ *               team2Id:
+ *                 type: string
  *               matchDate:
  *                 type: string
  *                 format: date-time
@@ -48,8 +45,12 @@ const { authorize } = require("../middleware/roleMiddleware");
  *     responses:
  *       201:
  *         description: Match created successfully
+ *       400:
+ *         description: Invalid input or cannot create match between same team
  *       401:
  *         description: Not authorized
+ *       404:
+ *         description: One or both teams not found
  */
 router.post("/", protect, authorize("Admin"), createMatch);
 
@@ -84,7 +85,7 @@ router.post("/", protect, authorize("Admin"), createMatch);
  *       401:
  *         description: Not authorized
  *       404:
- *         description: Match not found
+ *         description: Match not found or team not found in match
  */
 router.put("/score", protect, authorize("Admin"), updateScore);
 
@@ -99,6 +100,50 @@ router.put("/score", protect, authorize("Admin"), updateScore);
  *     responses:
  *       200:
  *         description: List of all matches
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   teams:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         captainId:
+ *                           type: string
+ *                   matchDate:
+ *                     type: string
+ *                     format: date-time
+ *                   location:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                     enum: [Upcoming, Live, Completed, Cancelled]
+ *                   scores:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         teamId:
+ *                           type: object
+ *                           properties:
+ *                             _id:
+ *                               type: string
+ *                             name:
+ *                               type: string
+ *                         score:
+ *                           type: number
  *       401:
  *         description: Not authorized
  */
@@ -118,9 +163,52 @@ router.get("/", protect, getMatches);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Match ID
  *     responses:
  *       200:
  *         description: Match details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 _id:
+ *                   type: string
+ *                 teams:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       captainId:
+ *                         type: string
+ *                 matchDate:
+ *                   type: string
+ *                   format: date-time
+ *                 location:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                   enum: [Upcoming, Live, Completed, Cancelled]
+ *                 scores:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       teamId:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                       score:
+ *                         type: number
  *       401:
  *         description: Not authorized
  *       404:
@@ -142,10 +230,55 @@ router.get("/:id", protect, getMatchById);
  *         required: true
  *         schema:
  *           type: string
- *           enum: [Upcoming, Live, Completed]
+ *           enum: [Upcoming, Live, Completed, Cancelled]
+ *         description: Match status
  *     responses:
  *       200:
  *         description: List of matches with the specified status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   teams:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         captainId:
+ *                           type: string
+ *                   matchDate:
+ *                     type: string
+ *                     format: date-time
+ *                   location:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                     enum: [Upcoming, Live, Completed, Cancelled]
+ *                   scores:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         teamId:
+ *                           type: object
+ *                           properties:
+ *                             _id:
+ *                               type: string
+ *                             name:
+ *                               type: string
+ *                         score:
+ *                           type: number
  *       401:
  *         description: Not authorized
  */
@@ -173,10 +306,52 @@ router.get("/status/:status", protect, getMatchesByStatus);
  *                 type: string
  *               status:
  *                 type: string
- *                 enum: [Upcoming, Live, Completed]
+ *                 enum: [Upcoming, Live, Completed, Cancelled]
  *     responses:
  *       200:
  *         description: Match status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 match:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           captainId:
+ *                             type: string
+ *                     status:
+ *                       type: string
+ *                       enum: [Upcoming, Live, Completed, Cancelled]
+ *                     scores:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           teamId:
+ *                             type: object
+ *                             properties:
+ *                               _id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                           score:
+ *                             type: number
+ *       400:
+ *         description: Invalid status
  *       401:
  *         description: Not authorized
  *       404:
@@ -198,6 +373,7 @@ router.put("/status", protect, authorize("Admin"), updateMatchStatus);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Match ID
  *     requestBody:
  *       required: true
  *       content:
@@ -207,7 +383,7 @@ router.put("/status", protect, authorize("Admin"), updateMatchStatus);
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [Upcoming, Live, Completed]
+ *                 enum: [Upcoming, Live, Completed, Cancelled]
  *               matchDate:
  *                 type: string
  *                 format: date-time
@@ -218,6 +394,53 @@ router.put("/status", protect, authorize("Admin"), updateMatchStatus);
  *     responses:
  *       200:
  *         description: Match updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 match:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           captainId:
+ *                             type: string
+ *                     matchDate:
+ *                       type: string
+ *                       format: date-time
+ *                     location:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                       enum: [Upcoming, Live, Completed, Cancelled]
+ *                     scores:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           teamId:
+ *                             type: object
+ *                             properties:
+ *                               _id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                           score:
+ *                             type: number
  *       401:
  *         description: Not authorized
  *       404:
@@ -239,9 +462,18 @@ router.put("/:matchId", protect, authorize("Admin"), updateMatch);
  *         required: true
  *         schema:
  *           type: string
+ *         description: Match ID
  *     responses:
  *       200:
  *         description: Match deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Match deleted successfully"
  *       401:
  *         description: Not authorized
  *       403:

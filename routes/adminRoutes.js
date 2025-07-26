@@ -10,9 +10,6 @@ const {
   approvePlayerRemoval,
   rejectPlayerRemoval,
   getAllMatches,
-  createMatch,
-  updateMatchScore,
-  updateMatchStatus,
   getAllUsers,
   deleteUser,
   deleteTeam,
@@ -235,117 +232,6 @@ router.post(
  *         description: Not authorized
  */
 router.get("/matches", protect, authorize("Admin"), getAllMatches);
-
-/**
- * @swagger
- * /api/admin/matches:
- *   post:
- *     summary: Create new match
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - team1Id
- *               - team2Id
- *             properties:
- *               team1Id:
- *                 type: string
- *               team2Id:
- *                 type: string
- *               matchDate:
- *                 type: string
- *                 format: date-time
- *               location:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       201:
- *         description: Match created successfully
- *       400:
- *         description: Invalid input
- *       401:
- *         description: Not authorized
- *       404:
- *         description: Team not found
- */
-router.post("/matches", protect, authorize("Admin"), createMatch);
-
-/**
- * @swagger
- * /api/admin/update-score:
- *   post:
- *     summary: Update match score
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - matchId
- *               - teamId
- *               - score
- *             properties:
- *               matchId:
- *                 type: string
- *               teamId:
- *                 type: string
- *               score:
- *                 type: number
- *     responses:
- *       200:
- *         description: Match score updated successfully
- *       401:
- *         description: Not authorized
- *       404:
- *         description: Match or team not found
- */
-router.post("/update-score", protect, authorize("Admin"), updateMatchScore);
-
-/**
- * @swagger
- * /api/admin/update-status:
- *   post:
- *     summary: Update match status
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - matchId
- *               - status
- *             properties:
- *               matchId:
- *                 type: string
- *               status:
- *                 type: string
- *                 enum: [Upcoming, Live, Completed, Cancelled]
- *     responses:
- *       200:
- *         description: Match status updated successfully
- *       400:
- *         description: Invalid status
- *       401:
- *         description: Not authorized
- *       404:
- *         description: Match not found
- */
-router.post("/update-status", protect, authorize("Admin"), updateMatchStatus);
 
 /**
  * @swagger

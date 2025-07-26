@@ -60,12 +60,11 @@ exports.getTeamById = async (req, res) => {
     const team = await Team.findById(id)
       .populate({
         path: "captainId",
-        select:
-          "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+        select: "name email phone role uniqueId",
       })
       .populate({
         path: "players",
-        select: "id name email phone role uniqueId",
+        select: "name email phone role uniqueId",
       });
 
     if (!team) {
@@ -84,13 +83,13 @@ exports.getCaptainTeams = async (req, res) => {
     const teams = await Team.find({ captainId: req.user._id })
       .populate({
         path: "captainId",
-        select:
-          "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+        select: "name email phone role uniqueId",
       })
       .populate({
         path: "players",
-        select: "id name email phone role uniqueId",
-      });
+        select: "name email phone role uniqueId",
+      })
+      .lean();
 
     res.json(teams);
   } catch (error) {

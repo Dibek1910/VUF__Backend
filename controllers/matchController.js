@@ -1,18 +1,49 @@
 const Match = require("../models/Match");
+const Team = require("../models/Team");
 
 exports.createMatch = async (req, res) => {
   try {
-    const { teams, status, matchDate, location, description } = req.body;
+    const { team1Id, team2Id, matchDate, location, description } = req.body;
 
-    const match = await Match.create({
-      teams,
-      status,
-      matchDate,
-      location,
-      description,
+    const teams = await Team.find({ _id: { $in: [team1Id, team2Id] } });
+    if (teams.length !== 2) {
+      return res.status(404).json({ message: "One or both teams not found" });
+    }
+
+    if (team1Id === team2Id) {
+      return res
+        .status(400)
+        .json({ message: "Cannot create match between same team" });
+    }
+
+    const match = new Match({
+      teams: [team1Id, team2Id],
+      matchDate: matchDate ? new Date(matchDate) : new Date(),
+      location: location || "TBD",
+      description: description || "",
+      status: "Upcoming",
+      scores: [
+        { teamId: team1Id, score: 0 },
+        { teamId: team2Id, score: 0 },
+      ],
     });
 
-    res.status(201).json(match);
+    await match.save();
+
+    const populatedMatch = await Match.findById(match._id)
+      .populate({
+        path: "teams",
+        select: "name captainId",
+      })
+      .populate({
+        path: "scores.teamId",
+        select: "name",
+      });
+
+    res.status(201).json({
+      message: "Match created successfully",
+      match: populatedMatch,
+    });
   } catch (error) {
     console.error(`[MATCH] Create match error:`, error);
     res.status(500).json({ message: "Server error" });
@@ -28,9 +59,32 @@ exports.updateScore = async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    const updatedMatch = await Match.updateScore(matchId, teamId, score);
+    const scoreIndex = match.scores.findIndex(
+      (s) => s.teamId.toString() === teamId
+    );
+    if (scoreIndex === -1) {
+      return res.status(404).json({ message: "Team not found in this match" });
+    }
 
-    res.json(updatedMatch);
+    match.scores[scoreIndex].score = score;
+    match.status = "Live";
+
+    await match.save();
+
+    const updatedMatch = await Match.findById(matchId)
+      .populate({
+        path: "teams",
+        select: "name",
+      })
+      .populate({
+        path: "scores.teamId",
+        select: "name",
+      });
+
+    res.json({
+      message: "Match score updated successfully",
+      match: updatedMatch,
+    });
   } catch (error) {
     console.error(`[MATCH] Update score error:`, error);
     res.status(500).json({ message: "Server error" });
@@ -39,7 +93,17 @@ exports.updateScore = async (req, res) => {
 
 exports.getMatches = async (req, res) => {
   try {
-    const matches = await Match.findAll();
+    const matches = await Match.find()
+      .populate({
+        path: "teams",
+        select: "name captainId",
+      })
+      .populate({
+        path: "scores.teamId",
+        select: "name",
+      })
+      .sort({ matchDate: -1 })
+      .lean();
 
     res.json(matches);
   } catch (error) {
@@ -52,7 +116,16 @@ exports.getMatchById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const match = await Match.findById(id);
+    const match = await Match.findById(id)
+      .populate({
+        path: "teams",
+        select: "name captainId",
+      })
+      .populate({
+        path: "scores.teamId",
+        select: "name",
+      });
+
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
     }
@@ -71,13 +144,14 @@ exports.getMatchesByStatus = async (req, res) => {
     const matches = await Match.find({ status })
       .populate({
         path: "teams",
-        select: "id name captainId",
+        select: "name captainId",
       })
       .populate({
         path: "scores.teamId",
-        select: "id name",
+        select: "name",
       })
-      .sort({ matchDate: -1 });
+      .sort({ matchDate: -1 })
+      .lean();
 
     res.json(matches);
   } catch (error) {
@@ -90,9 +164,9 @@ exports.updateMatchStatus = async (req, res) => {
   try {
     const { matchId, status } = req.body;
 
-    const match = await Match.findById(matchId);
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
+    const validStatuses = ["Upcoming", "Live", "Completed", "Cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid match status" });
     }
 
     const updatedMatch = await Match.findByIdAndUpdate(
@@ -102,14 +176,21 @@ exports.updateMatchStatus = async (req, res) => {
     )
       .populate({
         path: "teams",
-        select: "id name captainId",
+        select: "name captainId",
       })
       .populate({
         path: "scores.teamId",
-        select: "id name",
+        select: "name",
       });
 
-    res.json(updatedMatch);
+    if (!updatedMatch) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+
+    res.json({
+      message: "Match status updated successfully",
+      match: updatedMatch,
+    });
   } catch (error) {
     console.error(`[MATCH] Update match status error:`, error);
     res.status(500).json({ message: "Server error" });
@@ -138,14 +219,17 @@ exports.updateMatch = async (req, res) => {
     )
       .populate({
         path: "teams",
-        select: "id name captainId",
+        select: "name captainId",
       })
       .populate({
         path: "scores.teamId",
-        select: "id name",
+        select: "name",
       });
 
-    res.json(updatedMatch);
+    res.json({
+      message: "Match updated successfully",
+      match: updatedMatch,
+    });
   } catch (error) {
     console.error(`[MATCH] Update match error:`, error);
     res.status(500).json({ message: "Server error" });
