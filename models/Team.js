@@ -36,16 +36,14 @@ const TeamSchema = new Schema(
   { timestamps: true }
 );
 
-const Team = mongoose.model("Team", TeamSchema);
-
-Team.findById = async (id) => {
-  return await Team.findOne({ _id: id });
+TeamSchema.statics.findById = async function (id) {
+  return await this.findOne({ _id: id });
 };
 
-Team.create = async (teamData) => {
+TeamSchema.statics.create = async function (teamData) {
   const { name, captainId } = teamData;
 
-  const team = new Team({
+  const team = new this({
     name,
     captainId,
     players: [captainId],
@@ -56,21 +54,25 @@ Team.create = async (teamData) => {
   return team;
 };
 
-Team.findAll = async () => {
-  return await Team.find()
+TeamSchema.statics.findAll = async function () {
+  return await this.find()
     .populate({
       path: "captainId",
       select:
-        "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+        "name email phone uniqueId subscriptionStatus subscriptionExpiryDate isApproved",
     })
     .populate({
       path: "players",
-      select: "id name email phone role uniqueId",
+      select: "name email phone uniqueId",
+    })
+    .populate({
+      path: "removalRequested",
+      select: "name email phone uniqueId",
     });
 };
 
-Team.addPlayer = async (teamId, playerId) => {
-  const team = await Team.findOneAndUpdate(
+TeamSchema.statics.addPlayer = async function (teamId, playerId) {
+  const team = await this.findOneAndUpdate(
     { _id: teamId },
     {
       $addToSet: { invitedPlayers: playerId },
@@ -80,18 +82,18 @@ Team.addPlayer = async (teamId, playerId) => {
     .populate({
       path: "captainId",
       select:
-        "id name email phone role uniqueId subscriptionStatus subscriptionExpiryDate",
+        "name email phone uniqueId subscriptionStatus subscriptionExpiryDate isApproved",
     })
     .populate({
       path: "players",
-      select: "id name email phone role uniqueId",
+      select: "name email phone uniqueId",
     });
 
   return team;
 };
 
-Team.setRemovalRequested = async (teamId, playerId) => {
-  const team = await Team.findOneAndUpdate(
+TeamSchema.statics.setRemovalRequested = async function (teamId, playerId) {
+  const team = await this.findOneAndUpdate(
     { _id: teamId },
     { removalRequested: playerId },
     { new: true }
@@ -100,8 +102,8 @@ Team.setRemovalRequested = async (teamId, playerId) => {
   return team;
 };
 
-Team.hasPlayer = async (teamId, playerId) => {
-  const team = await Team.findOne({
+TeamSchema.statics.hasPlayer = async function (teamId, playerId) {
+  const team = await this.findOne({
     _id: teamId,
     players: playerId,
   });
@@ -109,4 +111,5 @@ Team.hasPlayer = async (teamId, playerId) => {
   return !!team;
 };
 
+const Team = mongoose.model("Team", TeamSchema);
 module.exports = Team;

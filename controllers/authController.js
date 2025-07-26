@@ -7,7 +7,7 @@ exports.register = async (req, res) => {
   try {
     const { name, email, phone, role, password } = req.body;
 
-    let user = await User.findByEmail(email);
+    let user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -45,7 +45,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findByEmail(email);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }

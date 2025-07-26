@@ -38,7 +38,7 @@ const UserSchema = new Schema(
     },
     subscriptionStatus: {
       type: String,
-      enum: ["Active", "Inactive", "Expired"],
+      enum: ["Active", "Inactive", "Expired", "Pending"],
       default: function () {
         return this.role === "Captain" ? "Inactive" : "Active";
       },
@@ -52,7 +52,6 @@ const UserSchema = new Schema(
         return null;
       },
     },
-
     tokens: [
       {
         token: {
@@ -76,7 +75,6 @@ UserSchema.pre("save", async function (next) {
 
     while (!isUnique) {
       uniqueId = Math.random().toString(36).substring(2, 8).toUpperCase();
-
       const existingUser = await mongoose.model("User").findOne({ uniqueId });
       if (!existingUser) {
         isUnique = true;
@@ -90,17 +88,56 @@ UserSchema.pre("save", async function (next) {
 
 UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    next();
+    return next();
   }
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User = mongoose.model("User", UserSchema);
+UserSchema.statics.findByEmail = function (email) {
+  return this.findOne({ email });
+};
 
+UserSchema.statics.findByUniqueID = function (uniqueId) {
+  return this.findOne({ uniqueId });
+};
+
+UserSchema.statics.addToken = async function (userId, token) {
+  return this.findByIdAndUpdate(
+    userId,
+    { $push: { tokens: { token } } },
+    { new: true }
+  );
+};
+
+UserSchema.statics.removeToken = async function (userId, token) {
+  return this.findByIdAndUpdate(
+    userId,
+    { $pull: { tokens: { token } } },
+    { new: true }
+  );
+};
+
+UserSchema.statics.updateSubscription = async function (
+  userId,
+  status,
+  expiryDate
+) {
+  return this.findByIdAndUpdate(
+    userId,
+    {
+      subscriptionStatus: status,
+      subscriptionExpiryDate: expiryDate,
+    },
+    { new: true }
+  );
+};
+
+const User = mongoose.model("User", UserSchema);
 module.exports = User;
