@@ -12,8 +12,14 @@ const TeamSchema = new Schema(
       ref: "User",
       required: true,
     },
+    description: {
+      type: String,
+      default: "",
+    },
     jerseyNumbers: {
-      type: [Number],
+      type: Map,
+      of: Number,
+      default: new Map(),
     },
     removalRequested: {
       type: Schema.Types.ObjectId,
@@ -41,13 +47,15 @@ TeamSchema.statics.findById = async function (id) {
 };
 
 TeamSchema.statics.create = async function (teamData) {
-  const { name, captainId } = teamData;
+  const { name, captainId, description } = teamData;
 
   const team = new this({
     name,
     captainId,
+    description: description || "",
     players: [captainId],
     invitedPlayers: [],
+    jerseyNumbers: new Map([[captainId.toString(), 1]]),
   });
 
   await team.save();
@@ -107,6 +115,15 @@ TeamSchema.statics.hasPlayer = async function (teamId, playerId) {
   });
 
   return !!team;
+};
+
+TeamSchema.methods.getJerseyNumber = function (playerId) {
+  return this.jerseyNumbers.get(playerId.toString());
+};
+
+TeamSchema.methods.setJerseyNumber = function (playerId, jerseyNumber) {
+  this.jerseyNumbers.set(playerId.toString(), jerseyNumber);
+  return this.save();
 };
 
 const Team = mongoose.model("Team", TeamSchema);

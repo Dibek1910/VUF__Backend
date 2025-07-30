@@ -10,6 +10,7 @@ const teamRoutes = require("./routes/teamRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const playerRoutes = require("./routes/playerRoutes");
+const captainRoutes = require("./routes/captainRoutes");
 
 dotenv.config();
 
@@ -63,6 +64,7 @@ app.use("/api/teams", teamRoutes);
 app.use("/api/matches", matchRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/player", playerRoutes);
+app.use("/api/captain", captainRoutes);
 
 app.use((err, req, res, next) => {
   console.error(`[${new Date().toISOString()}] GLOBAL ERROR:`, err);
